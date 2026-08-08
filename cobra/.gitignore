@@ -1,0 +1,12 @@
+# 编译产物
+/proxyctl
+/bin/
+/dist/
+
+# Go 测试与覆盖率
+*.test
+*.out
+coverage.*
+
+# macOS
+.DS_Store

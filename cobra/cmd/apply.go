@@ -1,0 +1,60 @@
+package cmd
+
+import (
+	"fmt"
+	"io"
+
+	"github.com/alexwoo79/go_coding/cobra/internal/proxy"
+	"github.com/spf13/cobra"
+)
+
+var applyCmd = &cobra.Command{
+	Use:   "apply",
+	Short: "根据系统代理自动设置 git 全局代理",
+	Long: `根据当前 macOS 系统代理设置 git 全局代理（http.proxy / https.proxy），
+并提示在当前终端手动执行的 export 命令（子进程无法影响父 shell 环境变量）。`,
+	Args: usageArgs(cobra.NoArgs),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		info, err := proxy.Get()
+		if err != nil {
+			return err
+		}
+
+		out := cmd.OutOrStdout()
+
+		// 优先使用 HTTP 代理，其次 SOCKS 代理
+		url := info.HTTPProxyURL()
+		kind, host, port := "HTTP", info.HTTPHost, info.HTTPPort
+		if url == "" {
+			url = info.SOCKSPProxyURL()
+			kind, host, port = "SOCKS", info.SOCKSHost, info.SOCKSPort
+		}
+
+		if url == "" {
+			fmt.Fprintln(out, "未检测到可用的系统代理，网络将使用直连模式。")
+			fmt.Fprintln(out, "如需清除 git 代理，请执行: proxyctl clear")
+			return nil
+		}
+
+		fmt.Fprintf(out, "检测到 %s 代理: %s:%s\n", kind, host, port)
+		if err := gitSet("http.proxy", url); err != nil {
+			return fmt.Errorf("设置 git http.proxy 失败: %w", err)
+		}
+		if err := gitSet("https.proxy", url); err != nil {
+			return fmt.Errorf("设置 git https.proxy 失败: %w", err)
+		}
+		fmt.Fprintln(out, "已为 git 设置代理：")
+		fmt.Fprintf(out, "  http.proxy  = %s\n", url)
+		fmt.Fprintf(out, "  https.proxy = %s\n", url)
+		printExportHint(out, url)
+		return nil
+	},
+}
+
+// printExportHint 输出在当前 shell 手动设置代理环境变量的提示。
+func printExportHint(w io.Writer, url string) {
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "提示：如需在当前终端生效（子进程无法影响父 shell），请手动执行：")
+	fmt.Fprintf(w, "  export http_proxy=\"%s\"\n", url)
+	fmt.Fprintf(w, "  export https_proxy=\"%s\"\n", url)
+}
