@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alexwoo79/go_coding/cobra/cmd"
+	"github.com/alexwoo79/go_coding/proxyctl/cmd"
 )
 
 func main() {

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/alexwoo79/go_coding/cobra/internal/proxy"
+	"github.com/alexwoo79/go_coding/proxyctl/internal/proxy"
 	"github.com/spf13/cobra"
 )
 

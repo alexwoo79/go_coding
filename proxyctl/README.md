@@ -29,9 +29,9 @@ go build -o proxyctl .
 
 ```bash
 go build -ldflags "\
-  -X github.com/alexwoo79/go_coding/cobra/cmd.version=1.0.0 \
-  -X github.com/alexwoo79/go_coding/cobra/cmd.commit=$(git rev-parse --short HEAD) \
-  -X github.com/alexwoo79/go_coding/cobra/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -X github.com/alexwoo79/go_coding/proxyctl/cmd.version=1.0.0 \
+  -X github.com/alexwoo79/go_coding/proxyctl/cmd.commit=$(git rev-parse --short HEAD) \
+  -X github.com/alexwoo79/go_coding/proxyctl/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o proxyctl .
 ```
 
@@ -40,7 +40,7 @@ go build -ldflags "\
 也可以直接安装到 `$GOBIN`：
 
 ```bash
-go install github.com/alexwoo79/go_coding/cobra@latest
+go install github.com/alexwoo79/go_coding/proxyctl@latest
 ```
 
 ## 快速开始

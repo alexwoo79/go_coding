@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
-	portutil "github.com/alexwoo79/go_coding/cobra/internal/port"
+	portutil "github.com/alexwoo79/go_coding/proxyctl/internal/port"
 	"github.com/spf13/cobra"
 )
 

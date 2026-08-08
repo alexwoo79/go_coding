@@ -1,4 +1,4 @@
-module github.com/alexwoo79/go_coding/cobra
+module github.com/alexwoo79/go_coding/proxyctl
 
 go 1.25.0
 

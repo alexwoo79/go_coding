@@ -10,9 +10,9 @@ import (
 // 版本信息，可通过 ldflags 在构建时注入：
 //
 //	go build -ldflags "\
-//	  -X github.com/alexwoo79/go_coding/cobra/cmd.version=1.0.0 \
-//	  -X github.com/alexwoo79/go_coding/cobra/cmd.commit=$(git rev-parse --short HEAD) \
-//	  -X github.com/alexwoo79/go_coding/cobra/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+//	  -X github.com/alexwoo79/go_coding/proxyctl/cmd.version=1.0.0 \
+//	  -X github.com/alexwoo79/go_coding/proxyctl/cmd.commit=$(git rev-parse --short HEAD) \
+//	  -X github.com/alexwoo79/go_coding/proxyctl/cmd.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 //	  -o proxyctl .
 var (
 	version = "dev"
