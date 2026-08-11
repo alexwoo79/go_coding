@@ -46,6 +46,7 @@ var statusCmd = &cobra.Command{
 		fmt.Fprintln(out, proxyLine("HTTPS", info.HTTPSEnable, info.HTTPSProxyURL()))
 		fmt.Fprintln(out, proxyLine("SOCKS", info.SOCKSEnable, info.SOCKSPProxyURL()))
 		fmt.Fprintln(out, proxyLine("PAC", info.AutoConfig, info.PACURL()))
+		fmt.Fprintln(out, proxyLine("WPAD", info.AutoDiscovery, ""))
 
 		fmt.Fprintln(out)
 		fmt.Fprintln(out, "=== Git 全局代理 ===")
@@ -75,6 +76,11 @@ type systemProxyJSON struct {
 	HTTPS *endpointJSON `json:"https,omitempty"`
 	SOCKS *endpointJSON `json:"socks,omitempty"`
 	PAC   *pacJSON      `json:"pac,omitempty"`
+	WPAD  *wpadJSON     `json:"wpad,omitempty"`
+}
+
+type wpadJSON struct {
+	Enabled bool `json:"enabled"`
 }
 
 type endpointJSON struct {
@@ -108,6 +114,9 @@ func buildStatusJSON(info *proxy.Info, httpVal, httpsVal string) statusJSONOutpu
 		}
 		if info.AutoConfig {
 			out.SystemProxy.PAC = &pacJSON{Enabled: true, URL: info.AutoConfigURL}
+		}
+		if info.AutoDiscovery {
+			out.SystemProxy.WPAD = &wpadJSON{Enabled: true}
 		}
 	}
 	if httpVal != "" {

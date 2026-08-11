@@ -55,6 +55,8 @@ func parseScutilProxy(r io.Reader) (*Info, error) {
 			info.AutoConfig = value == "1"
 		case "ProxyAutoConfigURLString":
 			info.AutoConfigURL = value
+		case "ProxyAutoDiscoveryEnable":
+			info.AutoDiscovery = value == "1"
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -77,6 +79,7 @@ func Clear() error {
 			"-setsecurewebproxystate",
 			"-setsocksfirewallproxystate",
 			"-setautoproxystate",
+			"-setproxyautodiscovery",
 		} {
 			if err := exec.Command("networksetup", stateCmd, svc, "off").Run(); err != nil {
 				if firstErr == nil {
@@ -137,6 +140,12 @@ func SnapshotSystem() (SystemSnapshot, error) {
 				st.PAC = &p
 			}
 		}
+		if out, err := exec.Command("networksetup", "-getproxyautodiscovery", svc).Output(); err == nil {
+			if e, perr := parseNetworksetupEndpoint(string(out)); perr == nil {
+				enabled := e.Enabled
+				st.AutoDiscovery = &enabled
+			}
+		}
 		snap.Services = append(snap.Services, st)
 	}
 	return snap, nil
@@ -150,7 +159,7 @@ func ApplyProfile(http, https *EndpointState, socks *EndpointState, pac *PACStat
 	}
 	var firstErr error
 	for _, svc := range services {
-		applyToService(svc, http, https, socks, pac, &firstErr)
+		applyToService(svc, http, https, socks, pac, nil, &firstErr)
 	}
 	return firstErr
 }
@@ -159,13 +168,13 @@ func ApplyProfile(http, https *EndpointState, socks *EndpointState, pac *PACStat
 func RestoreSystem(snap SystemSnapshot) error {
 	var firstErr error
 	for _, st := range snap.Services {
-		applyToService(st.Name, st.HTTP, st.HTTPS, st.SOCKS, st.PAC, &firstErr)
+		applyToService(st.Name, st.HTTP, st.HTTPS, st.SOCKS, st.PAC, st.AutoDiscovery, &firstErr)
 	}
 	return firstErr
 }
 
 // applyToService 把一组端点配置应用到单个网络服务。
-func applyToService(svc string, http, https, socks *EndpointState, pac *PACState, firstErr *error) {
+func applyToService(svc string, http, https, socks *EndpointState, pac *PACState, autoDiscovery *bool, firstErr *error) {
 	if http != nil {
 		restoreEndpoint("web", svc, *http, firstErr)
 	}
@@ -182,6 +191,15 @@ func applyToService(svc string, http, https, socks *EndpointState, pac *PACState
 			}
 		} else if err := exec.Command("networksetup", "-setautoproxystate", svc, "off").Run(); err != nil && *firstErr == nil {
 			*firstErr = fmt.Errorf("关闭服务 %q 的 PAC 代理失败: %w", svc, err)
+		}
+	}
+	if autoDiscovery != nil {
+		state := "off"
+		if *autoDiscovery {
+			state = "on"
+		}
+		if err := exec.Command("networksetup", "-setproxyautodiscovery", svc, state).Run(); err != nil && *firstErr == nil {
+			*firstErr = fmt.Errorf("设置服务 %q 的代理自动发现失败: %w", svc, err)
 		}
 	}
 }

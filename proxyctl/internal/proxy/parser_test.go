@@ -21,6 +21,7 @@ func TestParseScutilProxy(t *testing.T) {
     SOCKSPort : 7892
     ProxyAutoConfigEnable : 1
     ProxyAutoConfigURLString : http://127.0.0.1:8080/proxy.pac
+    ProxyAutoDiscoveryEnable : 1
 }`
 	info, err := parseScutilProxy(strings.NewReader(out))
 	if err != nil {
@@ -38,6 +39,7 @@ func TestParseScutilProxy(t *testing.T) {
 		SOCKSPort:     "7892",
 		AutoConfig:    true,
 		AutoConfigURL: "http://127.0.0.1:8080/proxy.pac",
+		AutoDiscovery: true,
 	}
 	if !reflect.DeepEqual(info, want) {
 		t.Errorf("parseScutilProxy = %#v, want %#v", info, want)

@@ -43,6 +43,7 @@ var clearCmd = &cobra.Command{
 		} else if len(names) > 0 {
 			fmt.Fprintf(out, "已清除开发工具代理配置：%s。\n", strings.Join(names, ", "))
 		}
+		fmt.Fprintln(out, "当前终端如需立即直连（环境变量仍可能生效），请执行: eval \"$(proxyctl env --clear)\"")
 
 		if path, err := state.DefaultPath(); err == nil {
 			if snap, lerr := state.Load(path); lerr == nil && snap != nil {

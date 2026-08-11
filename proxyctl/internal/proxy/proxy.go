@@ -19,6 +19,8 @@ type Info struct {
 	AutoConfig  bool
 	// AutoConfigURL 是 PAC 自动代理脚本地址（ProxyAutoConfigURLString）。
 	AutoConfigURL string
+	// AutoDiscovery 表示是否启用代理自动发现（WPAD，macOS）。
+	AutoDiscovery bool
 }
 
 // HTTPProxyURL 返回 HTTP 代理 URL，未启用时返回空字符串。
@@ -75,11 +77,12 @@ type SystemSnapshot struct {
 
 // ServiceState 记录单个网络服务的代理状态（macOS）。
 type ServiceState struct {
-	Name  string         `json:"name"`
-	HTTP  *EndpointState `json:"http,omitempty"`
-	HTTPS *EndpointState `json:"https,omitempty"`
-	SOCKS *EndpointState `json:"socks,omitempty"`
-	PAC   *PACState      `json:"pac,omitempty"`
+	Name          string         `json:"name"`
+	HTTP          *EndpointState `json:"http,omitempty"`
+	HTTPS         *EndpointState `json:"https,omitempty"`
+	SOCKS         *EndpointState `json:"socks,omitempty"`
+	PAC           *PACState      `json:"pac,omitempty"`
+	AutoDiscovery *bool          `json:"auto_discovery,omitempty"`
 }
 
 // EndpointState 记录单个 HTTP/HTTPS/SOCKS 代理端点的状态。

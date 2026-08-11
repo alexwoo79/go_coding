@@ -30,6 +30,14 @@
   不再把 git 不存在 / 配置损坏伪装成空字符串。
 - **PAC URL 保留**：`Info` 新增 `AutoConfigURL`，`status` 现在能显示 PAC 脚本地址。
 
+### clear 完善（稳定期修复）
+
+- `clear` 现在同时关闭 macOS 的代理自动发现（WPAD，`-setproxyautodiscovery`），
+  并在快照 / 恢复中保留该设置。
+- `status`（含 `--json`）新增 WPAD 状态展示。
+- `clear` 输出提示：当前终端需执行 `eval "$(proxyctl env --clear)"` 才能立即直连
+  （子进程无法修改父 shell 环境变量；新开终端在安装 env hook 后会自动直连）。
+
 ### 架构调整
 
 - 新增包：`internal/git`、`internal/state`、`internal/diagnostic`、

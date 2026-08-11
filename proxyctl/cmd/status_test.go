@@ -14,6 +14,7 @@ func TestBuildStatusJSON(t *testing.T) {
 		HTTPPort:      "7890",
 		AutoConfig:    true,
 		AutoConfigURL: "http://127.0.0.1:8080/proxy.pac",
+		AutoDiscovery: true,
 	}
 	out := buildStatusJSON(info, "http://127.0.0.1:7890", "")
 	data, err := json.Marshal(out)
@@ -39,6 +40,10 @@ func TestBuildStatusJSON(t *testing.T) {
 	pac, ok := sys["pac"].(map[string]any)
 	if !ok || pac["url"] != "http://127.0.0.1:8080/proxy.pac" {
 		t.Errorf("system_proxy.pac = %#v", sys["pac"])
+	}
+	wpad, ok := sys["wpad"].(map[string]any)
+	if !ok || wpad["enabled"] != true {
+		t.Errorf("system_proxy.wpad = %#v", sys["wpad"])
 	}
 
 	git, ok := got["git"].(map[string]any)
