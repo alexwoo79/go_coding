@@ -3,7 +3,7 @@ package proxy
 import "testing"
 
 func TestMatchesProxyKeyword(t *testing.T) {
-	for _, ok := range []string{"clash", "Clash", "mihomo", "verge-mihomo", "clash-meta", "v2ray", "xray", "sing-box", "shadowsocks"} {
+	for _, ok := range []string{"clash", "Clash", "mihomo", "verge-mihomo", "clash-meta", "v2ray", "xray", "sing-box", "shadowsocks", "PigLiteCo", "stash"} {
 		if !matchesProxyKeyword(ok) {
 			t.Errorf("matchesProxyKeyword(%q) = false, want true", ok)
 		}

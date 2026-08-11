@@ -11,7 +11,7 @@ import (
 var proxyKeywords = []string{
 	"clash", "mihomo", "verge", "v2ray", "xray",
 	"sing-box", "singbox", "shadowsocks", "ss-local", "ssr",
-	"trojan", "hysteria", "naive", "surge",
+	"trojan", "hysteria", "naive", "surge", "stash", "piglite",
 }
 
 // socksOnlyKeywords 是仅提供 SOCKS 代理的程序关键字。
