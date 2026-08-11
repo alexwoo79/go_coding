@@ -3,8 +3,11 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"time"
 
+	"github.com/alexwoo79/go_coding/proxyctl/internal/git"
 	"github.com/alexwoo79/go_coding/proxyctl/internal/proxy"
+	"github.com/alexwoo79/go_coding/proxyctl/internal/state"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +15,8 @@ var applyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "根据系统代理自动设置 git 全局代理",
 	Long: `根据当前 macOS 系统代理设置 git 全局代理（http.proxy / https.proxy），
-并提示在当前终端手动执行的 export 命令（子进程无法影响父 shell 环境变量）。`,
+并提示在当前终端手动执行的 export 命令（子进程无法影响父 shell 环境变量）。
+执行前会保存系统代理与 git 代理状态快照，之后可用 proxyctl restore 恢复。`,
 	Args: usageArgs(cobra.NoArgs),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		info, err := proxy.Get()
@@ -36,11 +40,36 @@ var applyCmd = &cobra.Command{
 			return nil
 		}
 
+		gitCfg := git.New()
+
+		// 先保存快照再修改配置：clear 之后可用 restore 恢复 apply 前的状态。
+		systemSnap, err := proxy.SnapshotSystem()
+		if err != nil {
+			return fmt.Errorf("保存系统代理快照失败（已中止，避免覆盖原配置）: %w", err)
+		}
+		gitSnap, err := gitCfg.Snapshot()
+		if err != nil {
+			return fmt.Errorf("保存 git 代理快照失败（已中止，避免覆盖原配置）: %w", err)
+		}
+		path, err := state.DefaultPath()
+		if err != nil {
+			return err
+		}
+		if err := state.Save(path, &state.State{
+			Version:   state.Version,
+			Timestamp: time.Now(),
+			System:    systemSnap,
+			Git:       gitSnap,
+		}); err != nil {
+			return fmt.Errorf("保存状态快照失败（已中止，避免覆盖原配置）: %w", err)
+		}
+
 		fmt.Fprintf(out, "检测到 %s 代理: %s:%s\n", kind, host, port)
-		if err := gitSet("http.proxy", url); err != nil {
+		fmt.Fprintf(out, "已保存状态快照: %s\n", path)
+		if err := gitCfg.Set("http.proxy", url); err != nil {
 			return fmt.Errorf("设置 git http.proxy 失败: %w", err)
 		}
-		if err := gitSet("https.proxy", url); err != nil {
+		if err := gitCfg.Set("https.proxy", url); err != nil {
 			return fmt.Errorf("设置 git https.proxy 失败: %w", err)
 		}
 		fmt.Fprintln(out, "已为 git 设置代理：")

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -28,49 +29,58 @@ func Find(port string, all bool) ([]Process, error) {
 		}
 		return nil, fmt.Errorf("lsof 执行失败: %w", err)
 	}
+	return parseLsof(string(out)), nil
+}
 
+// parseLsof 解析 `lsof -F pcn` 输出；同一进程的多个地址合并保留。
+func parseLsof(out string) []Process {
 	var procs []Process
-	var cur *Process
-	seen := make(map[string]bool) // 按 PID 去重
+	byPID := make(map[int]int)
+	cur := -1
 
-	flush := func() {
-		if cur != nil {
-			if !seen[cur.PID] {
-				seen[cur.PID] = true
-				procs = append(procs, *cur)
-			}
-			cur = nil
-		}
-	}
-
-	for _, line := range strings.Split(string(out), "\n") {
+	for _, line := range strings.Split(strings.TrimSuffix(out, "\n"), "\n") {
 		switch {
 		case strings.HasPrefix(line, "p"):
-			flush()
-			cur = &Process{PID: strings.TrimPrefix(line, "p")}
+			pid, err := strconv.Atoi(strings.TrimPrefix(line, "p"))
+			if err != nil {
+				cur = -1
+				continue
+			}
+			if i, ok := byPID[pid]; ok {
+				cur = i
+				continue
+			}
+			byPID[pid] = len(procs)
+			procs = append(procs, Process{PID: pid})
+			cur = len(procs) - 1
 		case strings.HasPrefix(line, "c"):
-			if cur != nil {
-				cur.Command = strings.TrimPrefix(line, "c")
+			if cur >= 0 && procs[cur].Command == "" {
+				procs[cur].Command = strings.TrimPrefix(line, "c")
 			}
 		case strings.HasPrefix(line, "n"):
-			if cur != nil {
-				cur.Address = strings.TrimPrefix(line, "n")
+			if cur >= 0 {
+				addr := strings.TrimPrefix(line, "n")
+				if !contains(procs[cur].Addresses, addr) {
+					procs[cur].Addresses = append(procs[cur].Addresses, addr)
+				}
 			}
 		}
 	}
-	flush()
 
 	sort.Slice(procs, func(i, j int) bool { return procs[i].PID < procs[j].PID })
-	return procs, nil
+	for i := range procs {
+		sort.Strings(procs[i].Addresses)
+	}
+	return procs
 }
 
 // Kill 结束占用端口的所有进程，并返回成功与失败汇总（由调用方负责输出）。
 func Kill(procs []Process, force bool) KillSummary {
 	var summary KillSummary
 	for _, p := range procs {
-		args := []string{p.PID}
+		args := []string{strconv.Itoa(p.PID)}
 		if force {
-			args = []string{"-9", p.PID}
+			args = []string{"-9", strconv.Itoa(p.PID)}
 		}
 		if err := exec.Command("kill", args...).Run(); err != nil {
 			summary.Failed = append(summary.Failed, KillFailure{Process: p, Err: err})

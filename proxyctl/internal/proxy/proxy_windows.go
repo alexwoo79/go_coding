@@ -27,8 +27,9 @@ func Get() (*Info, error) {
 		info.SOCKSEnable = enabled
 	}
 
-	if _, _, err := key.GetStringValue("AutoConfigURL"); err == nil {
+	if url, _, err := key.GetStringValue("AutoConfigURL"); err == nil && url != "" {
 		info.AutoConfig = true
+		info.AutoConfigURL = url
 	}
 
 	server, _, err := key.GetStringValue("ProxyServer")
@@ -89,4 +90,49 @@ func Clear() error {
 	}
 	defer key.Close()
 	return key.SetDWordValue("ProxyEnable", 0)
+}
+
+// SnapshotSystem 记录 Windows 注册表中的系统代理状态。
+func SnapshotSystem() (SystemSnapshot, error) {
+	key, err := registry.OpenKey(registry.CURRENT_USER, internetSettingsKey, registry.QUERY_VALUE)
+	if err != nil {
+		return SystemSnapshot{}, err
+	}
+	defer key.Close()
+
+	snap := SystemSnapshot{}
+	if enable, _, err := key.GetIntegerValue("ProxyEnable"); err == nil {
+		snap.ProxyEnable = enable == 1
+	}
+	snap.ProxyServer, _, _ = key.GetStringValue("ProxyServer")
+	snap.AutoConfigURL, _, _ = key.GetStringValue("AutoConfigURL")
+	return snap, nil
+}
+
+// RestoreSystem 恢复 Windows 注册表中的系统代理状态。
+func RestoreSystem(snap SystemSnapshot) error {
+	key, err := registry.OpenKey(registry.CURRENT_USER, internetSettingsKey, registry.SET_VALUE)
+	if err != nil {
+		return err
+	}
+	defer key.Close()
+
+	v := uint32(0)
+	if snap.ProxyEnable {
+		v = 1
+	}
+	if err := key.SetDWordValue("ProxyEnable", v); err != nil {
+		return err
+	}
+	if snap.ProxyServer != "" {
+		if err := key.SetStringValue("ProxyServer", snap.ProxyServer); err != nil {
+			return err
+		}
+	}
+	if snap.AutoConfigURL != "" {
+		if err := key.SetStringValue("AutoConfigURL", snap.AutoConfigURL); err != nil {
+			return err
+		}
+	}
+	return nil
 }

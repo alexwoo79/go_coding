@@ -3,8 +3,11 @@ package cmd
 import (
 	"bytes"
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/alexwoo79/go_coding/proxyctl/internal/state"
 )
 
 // executeCommand 以指定参数运行根命令并捕获输出。
@@ -73,5 +76,16 @@ func TestDisplayValue(t *testing.T) {
 	const url = "http://127.0.0.1:7892"
 	if got := displayValue(url); got != url {
 		t.Errorf("displayValue(%q) = %q", url, got)
+	}
+}
+
+func TestRestoreWithoutSnapshot(t *testing.T) {
+	t.Setenv(state.EnvFile, filepath.Join(t.TempDir(), "missing.json"))
+	_, err := executeCommand("restore")
+	if err == nil {
+		t.Fatal("restore 应因缺少快照而报错")
+	}
+	if !strings.Contains(err.Error(), "未找到状态快照") {
+		t.Errorf("restore 错误 = %v", err)
 	}
 }

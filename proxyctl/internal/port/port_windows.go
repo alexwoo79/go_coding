@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func Find(port string, all bool) ([]Process, error) {
 	}
 
 	var procs []Process
-	seen := make(map[string]bool) // 按 PID 去重
+	byPID := make(map[int]int)
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "Proto") {
@@ -43,14 +44,21 @@ func Find(port string, all bool) ([]Process, error) {
 		if !all && !strings.EqualFold(state, "LISTENING") {
 			continue
 		}
-		if seen[pid] {
+		pidInt, err := strconv.Atoi(pid)
+		if err != nil {
 			continue
 		}
-		seen[pid] = true
+		if i, ok := byPID[pidInt]; ok {
+			if !contains(procs[i].Addresses, local) {
+				procs[i].Addresses = append(procs[i].Addresses, local)
+			}
+			continue
+		}
+		byPID[pidInt] = len(procs)
 		procs = append(procs, Process{
-			PID:     pid,
-			Command: processName(pid),
-			Address: local,
+			PID:       pidInt,
+			Command:   processName(pid),
+			Addresses: []string{local},
 		})
 	}
 
@@ -81,7 +89,7 @@ func processName(pid string) string {
 func Kill(procs []Process, force bool) KillSummary {
 	var summary KillSummary
 	for _, p := range procs {
-		args := []string{"/PID", p.PID}
+		args := []string{"/PID", strconv.Itoa(p.PID)}
 		if force {
 			args = append(args, "/F")
 		}

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexwoo79/go_coding/proxyctl/internal/git"
 	"github.com/alexwoo79/go_coding/proxyctl/internal/proxy"
 	"github.com/spf13/cobra"
 )
@@ -55,8 +56,19 @@ HTTP 请求优先使用系统检测到的代理，未检测到时回退到环境
 		// 4. git 测试
 		fmt.Fprintln(out)
 		fmt.Fprintln(out, "4. git 测试 (github.com)：")
-		fmt.Fprintf(out, "   http.proxy  = %s\n", displayValue(gitGet("http.proxy")))
-		fmt.Fprintf(out, "   https.proxy = %s\n", displayValue(gitGet("https.proxy")))
+		gitCfg := git.New()
+		httpVal, err := gitCfg.Get("http.proxy")
+		if err != nil {
+			fmt.Fprintf(out, "   http.proxy  = 读取失败: %v\n", err)
+		} else {
+			fmt.Fprintf(out, "   http.proxy  = %s\n", displayValue(httpVal))
+		}
+		httpsVal, err := gitCfg.Get("https.proxy")
+		if err != nil {
+			fmt.Fprintf(out, "   https.proxy = 读取失败: %v\n", err)
+		} else {
+			fmt.Fprintf(out, "   https.proxy = %s\n", displayValue(httpsVal))
+		}
 		runCmd(out, exec.Command("git", "ls-remote", "https://github.com/github/gitignore.git", "HEAD"))
 
 		return nil

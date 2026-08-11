@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/alexwoo79/go_coding/proxyctl/internal/git"
 	"github.com/alexwoo79/go_coding/proxyctl/internal/proxy"
 	"github.com/spf13/cobra"
 )
@@ -23,12 +24,23 @@ var statusCmd = &cobra.Command{
 		fmt.Fprintln(out, proxyLine("HTTP", info.HTTPEnable, info.HTTPProxyURL()))
 		fmt.Fprintln(out, proxyLine("HTTPS", info.HTTPSEnable, info.HTTPSProxyURL()))
 		fmt.Fprintln(out, proxyLine("SOCKS", info.SOCKSEnable, info.SOCKSPProxyURL()))
-		fmt.Fprintf(out, "%-7s自动代理: %s\n", "PAC", enabledText(info.AutoConfig))
+		fmt.Fprintln(out, proxyLine("PAC", info.AutoConfig, info.PACURL()))
 
 		fmt.Fprintln(out)
 		fmt.Fprintln(out, "=== Git 全局代理 ===")
-		fmt.Fprintf(out, "  http.proxy  = %s\n", displayValue(gitGet("http.proxy")))
-		fmt.Fprintf(out, "  https.proxy = %s\n", displayValue(gitGet("https.proxy")))
+		gitCfg := git.New()
+		httpVal, err := gitCfg.Get("http.proxy")
+		if err != nil {
+			fmt.Fprintf(out, "  http.proxy  = 读取失败: %v\n", err)
+		} else {
+			fmt.Fprintf(out, "  http.proxy  = %s\n", displayValue(httpVal))
+		}
+		httpsVal, err := gitCfg.Get("https.proxy")
+		if err != nil {
+			fmt.Fprintf(out, "  https.proxy = 读取失败: %v\n", err)
+		} else {
+			fmt.Fprintf(out, "  https.proxy = %s\n", displayValue(httpsVal))
+		}
 
 		return nil
 	},
@@ -36,16 +48,11 @@ var statusCmd = &cobra.Command{
 
 // proxyLine 生成单行代理状态文本。
 func proxyLine(name string, enabled bool, url string) string {
-	if enabled && url != "" {
+	if !enabled {
+		return fmt.Sprintf("%-7s代理: 未启用", name)
+	}
+	if url != "" {
 		return fmt.Sprintf("%-7s代理已启用: %s", name, url)
 	}
-	return fmt.Sprintf("%-7s代理: 未启用", name)
-}
-
-// enabledText 将布尔值转换为中文状态文本。
-func enabledText(v bool) string {
-	if v {
-		return "已启用"
-	}
-	return "未启用"
+	return fmt.Sprintf("%-7s代理: 已启用", name)
 }

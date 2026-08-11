@@ -49,6 +49,7 @@ go install github.com/alexwoo79/go_coding/proxyctl@latest
 proxyctl status              # 查看系统代理与 git 代理状态
 proxyctl apply               # 按系统代理自动设置 git 全局代理
 proxyctl clear               # 关闭系统代理并清除 git 全局代理
+proxyctl restore             # 从快照恢复 apply 前的系统代理与 git 代理
 proxyctl test                # 网络连通性测试
 proxyctl port 7892           # 查看 7892 端口占用
 proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
@@ -61,6 +62,7 @@ proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 | `status` | 查看系统代理（HTTP/HTTPS/SOCKS/PAC）与 git 全局代理（`http.proxy`/`https.proxy`）状态 |
 | `apply` | 读取系统代理并设置 git 全局代理；优先使用 HTTP 代理，未启用时回退到 SOCKS 代理 |
 | `clear` | 关闭系统代理（HTTP/HTTPS/SOCKS/PAC）并删除 git 全局代理配置 |
+| `restore` | 从 `apply` 保存的状态快照恢复系统代理与 git 全局代理 |
 | `test` | 依次执行公网 IP、HTTP 响应、ping、git 连通性测试 |
 | `port` | 检查 TCP 端口占用，可结束占用进程 |
 | `version` | 显示版本、commit、构建时间与 Go 版本 |
@@ -78,9 +80,25 @@ proxyctl port <端口号> [--all] [--kill] [--force]
 | --- | --- |
 | `--all` | 显示该端口的全部连接（默认仅显示 LISTEN 监听进程） |
 | `--kill` | 结束占用该端口的进程 |
+| `--yes` | 配合 `--kill` 跳过结束确认（非交互式环境必须使用） |
 | `--force` | 配合 `--kill` 使用，强制结束进程（Unix 发送 `kill -9`，Windows 使用 `taskkill /F`） |
 
 端口号必须是 1–65535 之间的数字。
+
+`--kill` 默认会在终端中要求确认；在脚本等非交互式环境中必须显式追加 `--yes`。
+
+### 状态快照与恢复
+
+执行 `proxyctl apply` 前，proxyctl 会把当前系统代理（每个网络服务的
+HTTP/HTTPS/SOCKS/PAC 状态）与 git 全局代理保存到
+`~/.config/proxyctl/state.json`（可用环境变量 `PROXYCTL_STATE_FILE` 覆盖）。
+
+```bash
+proxyctl clear     # 关闭系统代理并清除 git 代理（快照保留）
+proxyctl restore   # 把系统代理与 git 代理恢复为 apply 前的状态
+```
+
+这样 `clear` 不会永久丢失你原有的代理配置。
 
 ### apply 与当前终端
 

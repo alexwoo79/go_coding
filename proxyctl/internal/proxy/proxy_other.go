@@ -13,3 +13,13 @@ func Get() (*Info, error) {
 func Clear() error {
 	return errors.New("该系统代理命令仅在 macOS/Windows 上支持")
 }
+
+// SnapshotSystem 在非 macOS/Windows 平台上不支持。
+func SnapshotSystem() (SystemSnapshot, error) {
+	return SystemSnapshot{}, errors.New("该系统代理快照仅在 macOS/Windows 上支持")
+}
+
+// RestoreSystem 在非 macOS/Windows 平台上不支持。
+func RestoreSystem(SystemSnapshot) error {
+	return errors.New("该系统代理快照仅在 macOS/Windows 上支持")
+}

@@ -15,6 +15,7 @@ var rootCmd = &cobra.Command{
   proxyctl status    # 查看当前系统代理与 git 代理状态
   proxyctl apply     # 根据系统代理自动设置 git 全局代理
   proxyctl clear     # 关闭系统代理并清除 git 代理
+  proxyctl restore   # 从快照恢复 apply 前的系统代理与 git 代理
   proxyctl test      # 执行网络连通性测试
   proxyctl port 7892 # 检查端口占用（--kill 可结束进程）`,
 	Version:       version,
@@ -41,6 +42,7 @@ func init() {
 		statusCmd,
 		applyCmd,
 		clearCmd,
+		restoreCmd,
 		testCmd,
 		portCmd,
 		versionCmd,
