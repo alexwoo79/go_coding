@@ -40,29 +40,12 @@ var applyCmd = &cobra.Command{
 			return nil
 		}
 
-		gitCfg := git.New()
-
 		// 先保存快照再修改配置：clear 之后可用 restore 恢复 apply 前的状态。
-		systemSnap, err := proxy.SnapshotSystem()
-		if err != nil {
-			return fmt.Errorf("保存系统代理快照失败（已中止，避免覆盖原配置）: %w", err)
-		}
-		gitSnap, err := gitCfg.Snapshot()
-		if err != nil {
-			return fmt.Errorf("保存 git 代理快照失败（已中止，避免覆盖原配置）: %w", err)
-		}
-		path, err := state.DefaultPath()
+		path, err := saveStateSnapshot()
 		if err != nil {
 			return err
 		}
-		if err := state.Save(path, &state.State{
-			Version:   state.Version,
-			Timestamp: time.Now(),
-			System:    systemSnap,
-			Git:       gitSnap,
-		}); err != nil {
-			return fmt.Errorf("保存状态快照失败（已中止，避免覆盖原配置）: %w", err)
-		}
+		gitCfg := git.New()
 
 		fmt.Fprintf(out, "检测到 %s 代理: %s:%s\n", kind, host, port)
 		fmt.Fprintf(out, "已保存状态快照: %s\n", path)
@@ -78,6 +61,31 @@ var applyCmd = &cobra.Command{
 		printExportHint(out, url)
 		return nil
 	},
+}
+
+// saveStateSnapshot 保存当前系统代理与 git 代理快照，返回快照路径。
+func saveStateSnapshot() (string, error) {
+	systemSnap, err := proxy.SnapshotSystem()
+	if err != nil {
+		return "", fmt.Errorf("保存系统代理快照失败（已中止，避免覆盖原配置）: %w", err)
+	}
+	gitSnap, err := git.New().Snapshot()
+	if err != nil {
+		return "", fmt.Errorf("保存 git 代理快照失败（已中止，避免覆盖原配置）: %w", err)
+	}
+	path, err := state.DefaultPath()
+	if err != nil {
+		return "", err
+	}
+	if err := state.Save(path, &state.State{
+		Version:   state.Version,
+		Timestamp: time.Now(),
+		System:    systemSnap,
+		Git:       gitSnap,
+	}); err != nil {
+		return "", fmt.Errorf("保存状态快照失败（已中止，避免覆盖原配置）: %w", err)
+	}
+	return path, nil
 }
 
 // printExportHint 输出在当前 shell 手动设置代理环境变量的提示。

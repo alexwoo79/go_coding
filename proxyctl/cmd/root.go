@@ -16,6 +16,8 @@ var rootCmd = &cobra.Command{
   proxyctl apply     # 根据系统代理自动设置 git 全局代理
   proxyctl clear     # 关闭系统代理并清除 git 代理
   proxyctl restore   # 从快照恢复 apply 前的系统代理与 git 代理
+  proxyctl on        # 自动检测代理程序并一键开启
+  proxyctl off       # 一键直连（等价于 clear）
   proxyctl test      # 执行网络连通性测试
   proxyctl doctor    # 一键诊断开发环境网络状态
   proxyctl env       # 生成/安装终端代理环境变量
@@ -47,6 +49,8 @@ func init() {
 		applyCmd,
 		clearCmd,
 		restoreCmd,
+		onCmd,
+		offCmd,
 		testCmd,
 		doctorCmd,
 		envCmd,

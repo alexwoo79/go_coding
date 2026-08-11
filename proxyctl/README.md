@@ -52,6 +52,8 @@ proxyctl status              # 查看系统代理与 git 代理状态
 proxyctl apply               # 按系统代理自动设置 git 全局代理
 proxyctl clear               # 关闭系统代理并清除 git 全局代理
 proxyctl restore             # 从快照恢复 apply 前的系统代理与 git 代理
+proxyctl on                  # 自动检测代理程序并一键开启
+proxyctl off                 # 一键直连（等价于 clear）
 proxyctl test                # 网络连通性测试
 proxyctl doctor              # 一键诊断开发环境网络状态
 proxyctl env                 # 生成/安装终端代理环境变量
@@ -70,6 +72,8 @@ proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 | `apply` | 读取系统代理并设置 git 全局代理；优先使用 HTTP 代理，未启用时回退到 SOCKS 代理 |
 | `clear` | 关闭系统代理（HTTP/HTTPS/SOCKS/PAC）并删除 git 全局代理配置 |
 | `restore` | 从 `apply` 保存的状态快照恢复系统代理与 git 全局代理 |
+| `on` | 自动检测运行中的代理程序（Clash/Mihomo/v2ray 等）及其端口，应用到系统代理、git、开发工具与环境变量 |
+| `off` | 一键直连，等价于 `clear` |
 | `test` | 依次执行公网 IP、HTTP 响应、ping、git 连通性测试 |
 | `doctor` | 一键诊断：系统代理、git 代理、端口监听、连通性、环境变量，发现问题时退出码为 1 |
 | `env` | 把当前系统代理生成为终端环境变量脚本，或安装到 shell 配置文件 |
@@ -206,6 +210,25 @@ proxyctl tools apply npm cargo     # 只写指定工具
 
 `proxyctl clear` 会一并清除这些工具的代理配置；`proxyctl restore`
 会一并恢复（前提是快照存在）。
+
+### on / off 快速开关
+
+`on` 会自动检测系统中运行中的代理程序（扫描常见端口
+7890/7891/7892/1080/1087/10808/20171 等，并按进程名匹配
+Clash/Mihomo/v2ray/xray/sing-box 等），然后一键应用到：
+
+1. 系统代理（macOS 所有网络服务）
+2. git 全局代理
+3. 开发工具配置（npm/pip/cargo/docker）
+4. 终端环境变量（新开终端自动生效，或当前终端手动 `eval "$(proxyctl env)"`）
+
+```bash
+proxyctl on    # 一键开启（执行前自动保存快照）
+proxyctl off   # 一键直连（等价于 clear，快照保留可 restore）
+```
+
+未检测到代理程序时 `on` 会报错并提示先启动代理，或改用
+`proxyctl profile use <名称>` 手动指定。
 
 ### apply 与当前终端
 

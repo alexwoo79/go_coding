@@ -38,6 +38,14 @@
 - `clear` 输出提示：当前终端需执行 `eval "$(proxyctl env --clear)"` 才能立即直连
   （子进程无法修改父 shell 环境变量；新开终端在安装 env hook 后会自动直连）。
 
+### on / off 快速命令
+
+- `proxyctl on`：自动检测系统中运行中的代理程序（扫描常见端口并按进程名匹配
+  Clash/Mihomo/v2ray/xray/sing-box 等；未找到时回退到系统代理配置），
+  然后一键应用到系统代理、git 全局代理、开发工具配置与终端环境变量；
+  执行前自动保存快照，可用 `off` / `restore` 恢复。
+- `proxyctl off`：等价于 `clear`，一键直连。
+
 ### 架构调整
 
 - 新增包：`internal/git`、`internal/state`、`internal/diagnostic`、
