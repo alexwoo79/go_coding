@@ -2,6 +2,8 @@
 
 proxyctl 是一个系统代理与端口管理命令行工具：查看系统代理状态、一键同步 git 全局代理、执行网络连通性测试、检查端口占用并结束占用进程。
 
+变更历史见 [CHANGELOG.md](CHANGELOG.md)。
+
 ```console
 $ proxyctl status
 === macOS 系统代理 ===
@@ -52,6 +54,8 @@ proxyctl clear               # 关闭系统代理并清除 git 全局代理
 proxyctl restore             # 从快照恢复 apply 前的系统代理与 git 代理
 proxyctl test                # 网络连通性测试
 proxyctl doctor              # 一键诊断开发环境网络状态
+proxyctl env                 # 生成/安装终端代理环境变量
+proxyctl tools               # 管理 npm/cargo/pip/docker 的代理配置
 proxyctl status --json       # 以 JSON 输出状态（便于 AI Agent 消费）
 proxyctl profile list        # 列出系统代理 profile
 proxyctl port 7892           # 查看 7892 端口占用
@@ -68,6 +72,8 @@ proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 | `restore` | 从 `apply` 保存的状态快照恢复系统代理与 git 全局代理 |
 | `test` | 依次执行公网 IP、HTTP 响应、ping、git 连通性测试 |
 | `doctor` | 一键诊断：系统代理、git 代理、端口监听、连通性、环境变量，发现问题时退出码为 1 |
+| `env` | 把当前系统代理生成为终端环境变量脚本，或安装到 shell 配置文件 |
+| `tools` | 读写 npm/cargo/pip/docker 各自的代理配置文件（apply/clear/restore/list） |
 | `port` | 检查 TCP 端口占用，可结束占用进程 |
 | `profile` | 保存 / 列出 / 应用 / 删除系统代理 profile |
 | `version` | 显示版本、commit、构建时间与 Go 版本 |
@@ -151,6 +157,55 @@ proxyctl profile remove clash # 删除 profile
 ```
 
 `use` 只修改系统代理；如需同步 git 代理，随后执行 `proxyctl apply`。
+
+### env（终端环境变量代理）
+
+macOS 系统代理只对 GUI 程序生效；终端 CLI（curl、pip、npm、cargo、uv、
+brew 等）遵循环境变量 `http_proxy`/`https_proxy`/`all_proxy`/`no_proxy`。
+`env` 把两者打通：
+
+```bash
+eval "$(proxyctl env)"        # 当前终端立即走代理
+eval "$(proxyctl env --clear)" # 当前终端立即直连
+proxyctl env install          # 写入 ~/.zshrc（可用 --file 指定），新开终端自动生效
+proxyctl env remove           # 移除 install 写入的 hook
+```
+
+`install` 写入的是受管 hook，每次新开终端自动执行 `proxyctl env`，
+因此会跟随当前系统代理状态。配合 profile 即可实现不同网络环境一键切换：
+
+```bash
+proxyctl profile use clash   # 切到 Clash 环境（新开终端自动走代理）
+proxyctl profile use direct  # 切到直连（新开终端自动恢复直连）
+```
+
+支持 `--shell zsh|bash|sh|fish|powershell`（默认按 `$SHELL` 推断）。
+首次 `install` 前会把原配置文件备份为 `<文件>.proxyctl.bak`。
+
+### tools（开发工具代理配置）
+
+`env` 覆盖环境变量型工具；npm、pip、cargo、docker 还有各自的持久化配置文件，
+由 `tools` 管理：
+
+```bash
+proxyctl tools list                # 查看各工具当前代理配置
+proxyctl tools apply               # 把当前系统代理写入全部工具（可选指定工具）
+proxyctl tools clear               # 清除工具代理配置
+proxyctl tools restore             # 从快照恢复（apply/clear 前自动保存快照）
+proxyctl tools apply npm cargo     # 只写指定工具
+```
+
+对应配置文件：
+
+| 工具 | 配置文件 | 配置项 |
+| --- | --- | --- |
+| npm | `~/.npmrc`（可用 `npm_config_userconfig` 覆盖） | `proxy` / `https-proxy` |
+| pip | `~/.config/pip/pip.conf`（可用 `PIP_CONFIG_FILE` 覆盖） | `[global] proxy` |
+| cargo | `~/.cargo/config.toml`（可用 `CARGO_HOME` 覆盖） | `[http] proxy` |
+| docker | `~/.docker/config.json`（可用 `DOCKER_CONFIG` 覆盖） | `proxies.default.httpProxy/httpsProxy/noProxy` |
+
+`proxyctl clear` 会一并清除这些工具的代理配置；`proxyctl restore`
+会一并恢复（前提是快照存在）。
 
 ### apply 与当前终端
 

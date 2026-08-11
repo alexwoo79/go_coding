@@ -18,6 +18,8 @@ var rootCmd = &cobra.Command{
   proxyctl restore   # 从快照恢复 apply 前的系统代理与 git 代理
   proxyctl test      # 执行网络连通性测试
   proxyctl doctor    # 一键诊断开发环境网络状态
+  proxyctl env       # 生成/安装终端代理环境变量
+  proxyctl tools     # 管理 npm/cargo/pip/docker 的代理配置
   proxyctl profile   # 管理系统代理 profile
   proxyctl port 7892 # 检查端口占用（--kill 可结束进程）`,
 	Version:       version,
@@ -47,6 +49,8 @@ func init() {
 		restoreCmd,
 		testCmd,
 		doctorCmd,
+		envCmd,
+		toolsCmd,
 		portCmd,
 		profileCmd,
 		versionCmd,

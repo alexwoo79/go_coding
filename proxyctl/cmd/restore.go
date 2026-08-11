@@ -3,10 +3,12 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/alexwoo79/go_coding/proxyctl/internal/git"
 	"github.com/alexwoo79/go_coding/proxyctl/internal/proxy"
 	"github.com/alexwoo79/go_coding/proxyctl/internal/state"
+	"github.com/alexwoo79/go_coding/proxyctl/internal/toolproxy"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +37,13 @@ var restoreCmd = &cobra.Command{
 		if err := git.New().Restore(snap.Git); err != nil {
 			return fmt.Errorf("恢复 git 全局代理失败: %w", err)
 		}
-		fmt.Fprintln(cmd.OutOrStdout(), "已从快照恢复系统代理与 git 全局代理。")
+		out := cmd.OutOrStdout()
+		fmt.Fprintln(out, "已从快照恢复系统代理与 git 全局代理。")
+		if names, rerr := restoreToolConfigs(toolproxy.Supported()); rerr != nil {
+			return fmt.Errorf("恢复开发工具代理配置失败: %w", rerr)
+		} else if len(names) > 0 {
+			fmt.Fprintf(out, "已恢复开发工具代理配置：%s。\n", strings.Join(names, ", "))
+		}
 		return nil
 	},
 }

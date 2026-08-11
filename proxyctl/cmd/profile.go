@@ -118,6 +118,7 @@ var profileUseCmd = &cobra.Command{
 		}
 		fmt.Fprintf(out, "已应用 profile %q：%s\n", name, profileSummary(p))
 		fmt.Fprintln(out, "如需同步 git 代理，请运行: proxyctl apply")
+		fmt.Fprintln(out, "当前终端如需立即生效环境变量，请执行: eval \"$(proxyctl env)\"")
 		return nil
 	},
 }
