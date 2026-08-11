@@ -3,6 +3,7 @@
 package proxy
 
 import (
+	"errors"
 	"strings"
 
 	"golang.org/x/sys/windows/registry"
@@ -133,6 +134,46 @@ func RestoreSystem(snap SystemSnapshot) error {
 		if err := key.SetStringValue("AutoConfigURL", snap.AutoConfigURL); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// ApplyProfile 将端点配置写入 Windows 注册表（ProxyServer 分协议格式）。
+func ApplyProfile(http, https *EndpointState, socks *EndpointState, pac *PACState) error {
+	key, err := registry.OpenKey(registry.CURRENT_USER, internetSettingsKey, registry.SET_VALUE)
+	if err != nil {
+		return err
+	}
+	defer key.Close()
+
+	var parts []string
+	enabled := false
+	add := func(name string, e *EndpointState) {
+		if e == nil || !e.Enabled || e.Host == "" || e.Port == "" {
+			return
+		}
+		parts = append(parts, name+"="+e.Host+":"+e.Port)
+		enabled = true
+	}
+	add("http", http)
+	add("https", https)
+	add("socks", socks)
+
+	if err := key.SetStringValue("ProxyServer", strings.Join(parts, ";")); err != nil {
+		return err
+	}
+	v := uint32(0)
+	if enabled {
+		v = 1
+	}
+	if err := key.SetDWordValue("ProxyEnable", v); err != nil {
+		return err
+	}
+	if pac != nil && pac.Enabled && pac.URL != "" {
+		return key.SetStringValue("AutoConfigURL", pac.URL)
+	}
+	if err := key.DeleteValue("AutoConfigURL"); err != nil && !errors.Is(err, registry.ErrNotExist) {
+		return err
 	}
 	return nil
 }

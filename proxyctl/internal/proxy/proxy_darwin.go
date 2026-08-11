@@ -142,30 +142,48 @@ func SnapshotSystem() (SystemSnapshot, error) {
 	return snap, nil
 }
 
+// ApplyProfile 将一组端点配置应用到所有网络服务。
+func ApplyProfile(http, https *EndpointState, socks *EndpointState, pac *PACState) error {
+	services, err := listServices()
+	if err != nil {
+		return err
+	}
+	var firstErr error
+	for _, svc := range services {
+		applyToService(svc, http, https, socks, pac, &firstErr)
+	}
+	return firstErr
+}
+
 // RestoreSystem 按快照恢复每个网络服务的代理状态。
 func RestoreSystem(snap SystemSnapshot) error {
 	var firstErr error
 	for _, st := range snap.Services {
-		if st.HTTP != nil {
-			restoreEndpoint("web", st.Name, *st.HTTP, &firstErr)
-		}
-		if st.HTTPS != nil {
-			restoreEndpoint("secureweb", st.Name, *st.HTTPS, &firstErr)
-		}
-		if st.SOCKS != nil {
-			restoreEndpoint("socksfirewall", st.Name, *st.SOCKS, &firstErr)
-		}
-		if st.PAC != nil {
-			if st.PAC.Enabled && st.PAC.URL != "" {
-				if err := exec.Command("networksetup", "-setautoproxyurl", st.Name, st.PAC.URL).Run(); err != nil && firstErr == nil {
-					firstErr = fmt.Errorf("恢复服务 %q 的 PAC 代理失败: %w", st.Name, err)
-				}
-			} else if err := exec.Command("networksetup", "-setautoproxystate", st.Name, "off").Run(); err != nil && firstErr == nil {
-				firstErr = fmt.Errorf("关闭服务 %q 的 PAC 代理失败: %w", st.Name, err)
-			}
-		}
+		applyToService(st.Name, st.HTTP, st.HTTPS, st.SOCKS, st.PAC, &firstErr)
 	}
 	return firstErr
+}
+
+// applyToService 把一组端点配置应用到单个网络服务。
+func applyToService(svc string, http, https, socks *EndpointState, pac *PACState, firstErr *error) {
+	if http != nil {
+		restoreEndpoint("web", svc, *http, firstErr)
+	}
+	if https != nil {
+		restoreEndpoint("secureweb", svc, *https, firstErr)
+	}
+	if socks != nil {
+		restoreEndpoint("socksfirewall", svc, *socks, firstErr)
+	}
+	if pac != nil {
+		if pac.Enabled && pac.URL != "" {
+			if err := exec.Command("networksetup", "-setautoproxyurl", svc, pac.URL).Run(); err != nil && *firstErr == nil {
+				*firstErr = fmt.Errorf("设置服务 %q 的 PAC 代理失败: %w", svc, err)
+			}
+		} else if err := exec.Command("networksetup", "-setautoproxystate", svc, "off").Run(); err != nil && *firstErr == nil {
+			*firstErr = fmt.Errorf("关闭服务 %q 的 PAC 代理失败: %w", svc, err)
+		}
+	}
 }
 
 // restoreEndpoint 恢复单个 HTTP/HTTPS/SOCKS 端点：快照启用时设置地址并开启，否则关闭。

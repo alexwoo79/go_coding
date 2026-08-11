@@ -23,3 +23,8 @@ func SnapshotSystem() (SystemSnapshot, error) {
 func RestoreSystem(SystemSnapshot) error {
 	return errors.New("该系统代理快照仅在 macOS/Windows 上支持")
 }
+
+// ApplyProfile 在非 macOS/Windows 平台上不支持。
+func ApplyProfile(*EndpointState, *EndpointState, *EndpointState, *PACState) error {
+	return errors.New("该系统代理配置仅在 macOS/Windows 上支持")
+}

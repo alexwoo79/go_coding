@@ -51,6 +51,9 @@ proxyctl apply               # 按系统代理自动设置 git 全局代理
 proxyctl clear               # 关闭系统代理并清除 git 全局代理
 proxyctl restore             # 从快照恢复 apply 前的系统代理与 git 代理
 proxyctl test                # 网络连通性测试
+proxyctl doctor              # 一键诊断开发环境网络状态
+proxyctl status --json       # 以 JSON 输出状态（便于 AI Agent 消费）
+proxyctl profile list        # 列出系统代理 profile
 proxyctl port 7892           # 查看 7892 端口占用
 proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 ```
@@ -64,7 +67,9 @@ proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 | `clear` | 关闭系统代理（HTTP/HTTPS/SOCKS/PAC）并删除 git 全局代理配置 |
 | `restore` | 从 `apply` 保存的状态快照恢复系统代理与 git 全局代理 |
 | `test` | 依次执行公网 IP、HTTP 响应、ping、git 连通性测试 |
+| `doctor` | 一键诊断：系统代理、git 代理、端口监听、连通性、环境变量，发现问题时退出码为 1 |
 | `port` | 检查 TCP 端口占用，可结束占用进程 |
+| `profile` | 保存 / 列出 / 应用 / 删除系统代理 profile |
 | `version` | 显示版本、commit、构建时间与 Go 版本 |
 | `completion` | 生成 bash / zsh / fish / powershell 自动补全脚本 |
 
@@ -99,6 +104,53 @@ proxyctl restore   # 把系统代理与 git 代理恢复为 apply 前的状态
 ```
 
 这样 `clear` 不会永久丢失你原有的代理配置。
+
+### status --json
+
+`status --json` 输出结构化 JSON，便于脚本或 AI Agent 消费：
+
+```json
+{
+  "system_proxy": {
+    "http": { "enabled": true, "host": "127.0.0.1", "port": "7890" },
+    "pac": { "enabled": true, "url": "http://127.0.0.1:8080/proxy.pac" }
+  },
+  "git": {
+    "http_proxy": "http://127.0.0.1:7890",
+    "https_proxy": "http://127.0.0.1:7890"
+  }
+}
+```
+
+未启用的代理项不会出现在输出中；未设置的 git 配置项为 `null`。
+
+### doctor
+
+`doctor` 把 `status` / `test` / `port` 组合成一次完整诊断：
+
+```console
+$ proxyctl doctor
+System / Proxy / Git / Ports / Connectivity / Environment ...
+Recommendation
+  → 端口 7890 未监听，但 git http.proxy 指向它：请确认代理程序已启动，或运行 proxyctl clear
+```
+
+存在问题时退出码为 1，适合接入脚本与 Agent 工作流。
+
+### profile
+
+profile 保存的是系统代理端点配置（HTTP/HTTPS/SOCKS/PAC），存放在
+`~/.config/proxyctl/profiles/`（可用环境变量 `PROXYCTL_PROFILE_DIR` 覆盖）。
+
+```bash
+proxyctl profile save clash   # 保存当前系统代理为 profile "clash"
+proxyctl profile list         # 列出全部 profile
+proxyctl profile use clash    # 把 profile 应用到系统代理
+proxyctl profile use direct   # 关闭系统代理（直连）
+proxyctl profile remove clash # 删除 profile
+```
+
+`use` 只修改系统代理；如需同步 git 代理，随后执行 `proxyctl apply`。
 
 ### apply 与当前终端
 
