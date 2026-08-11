@@ -1,0 +1,99 @@
+package todo
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"time"
+)
+
+// Stringer interface
+type Stringer interface {
+	String() string
+}
+
+// item struct representing a todo item
+type item struct {
+	Task        string
+	Done        bool
+	CreatedAt   time.Time
+	CompletedAt time.Time
+}
+
+// List representing a list of todo items
+type List []item
+
+// Add creates a new todo item and appends it to the list
+func (l *List) Add(task string) {
+	t := item{
+		Task:        task,
+		Done:        false,
+		CreatedAt:   time.Now(),
+		CompletedAt: time.Time{},
+	}
+
+	*l = append(*l, t)
+}
+
+// complete marks a todo item as completed by its position
+// setting Done = true and CompletedAt to the current time
+func (l *List) Complete(i int) error {
+	ls := *l
+	if i <= 0 || i > len(ls) {
+		return fmt.Errorf("Item %d does not exist", i)
+	}
+	//Adjusting index for 0 based index
+	ls[i-1].Done = true
+	ls[i-1].CompletedAt = time.Now()
+	return nil
+}
+
+// Delete removes a todo item from the list by its position
+func (l *List) Delete(i int) error {
+	ls := *l
+	if i <= 0 || i > len(ls) {
+		return fmt.Errorf("Item %d does not exist", i)
+	}
+	//Adjusting index for 0 based index
+	*l = append(ls[:i-1], ls[i:]...)
+	return nil
+}
+
+// Save method encodes the list to JSON and saves it to a file
+// using the provided file name
+func (l *List) Save(filename string) error {
+	js, err := json.Marshal(l)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filename, js, 0644)
+}
+
+// Get method decodes the JSON data from a file
+// the Json data and parses it into a list of items
+func (l *List) Get(filename string) error {
+	file, err := os.ReadFile(filename)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	if len(file) == 0 {
+		return nil
+	}
+	return json.Unmarshal(file, l)
+}
+
+func (l *List) String() string {
+	formatted := ""
+	for k, t := range *l {
+		prefix := " "
+		if t.Done {
+			prefix = "x "
+		}
+		formatted += fmt.Sprintf("%s%d: %s\n", prefix, k+1, t.Task)
+	}
+	return formatted
+}
