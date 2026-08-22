@@ -28,7 +28,7 @@ type Tool interface {
 
 // Supported 返回全部支持的工具。
 func Supported() []Tool {
-	return []Tool{npmTool{}, pipTool{}, cargoTool{}, dockerTool{}}
+	return []Tool{npmTool{}, pnpmTool{}, pipTool{}, cargoTool{}, dockerTool{}, brewTool{}}
 }
 
 // Find 按名称查找工具（大小写不敏感）。
@@ -38,7 +38,7 @@ func Find(name string) (Tool, error) {
 			return t, nil
 		}
 	}
-	return nil, fmt.Errorf("不支持的工具 %q（支持：npm、pip、cargo、docker）", name)
+	return nil, fmt.Errorf("不支持的工具 %q（支持：npm、pnpm、pip、cargo、docker、brew）", name)
 }
 
 // Select 按名称选择工具；未指定时返回全部。

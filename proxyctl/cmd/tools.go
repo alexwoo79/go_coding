@@ -14,13 +14,15 @@ import (
 
 var toolsCmd = &cobra.Command{
 	Use:   "tools",
-	Short: "管理开发工具（npm/cargo/pip/docker）的代理配置",
+	Short: "管理开发工具（npm/pnpm/pip/cargo/docker/brew）的代理配置",
 	Long: `读写各开发工具自己的代理配置文件，配合 env（终端环境变量）覆盖所有 CLI 工具：
-  npm     ~/.npmrc                proxy / https-proxy
-  pip     ~/.config/pip/pip.conf  [global] proxy
-  cargo   ~/.cargo/config.toml    [http] proxy
-  docker  ~/.docker/config.json   proxies.default.*
-环境变量型工具（brew/rustup/uv 等）由 proxyctl env 覆盖。`,
+  npm     ~/.npmrc                            proxy / https-proxy
+  pnpm    全局 config.yaml（v11）              httpProxy / httpsProxy / noProxy
+  pip     ~/.config/pip/pip.conf              [global] proxy
+  cargo   ~/.cargo/config.toml                [http] proxy
+  docker  ~/.docker/config.json               proxies.default.*
+  brew    ~/.homebrew/brew.env                http_proxy / https_proxy / all_proxy / no_proxy
+其余环境变量型工具（rustup/uv 等）由 proxyctl env 覆盖。`,
 	Args: usageArgs(cobra.NoArgs),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()

@@ -21,7 +21,7 @@ var envCmd = &cobra.Command{
 	Use:   "env",
 	Short: "生成/安装终端代理环境变量",
 	Long: `把当前系统代理生成为终端环境变量脚本（http_proxy/https_proxy/all_proxy/no_proxy
-及大写形式），让 curl、pip、npm、cargo、uv 等 CLI 工具统一走代理或直连。
+	及大写形式），让 curl、pip、npm、cargo、brew、uv 等 CLI 工具统一走代理或直连。
 
 用法：
   proxyctl env                # 输出脚本，配合 eval 使用：eval "$(proxyctl env)"

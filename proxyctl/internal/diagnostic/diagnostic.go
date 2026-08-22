@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -43,8 +44,10 @@ func RunAll(ctx context.Context, checkers []Checker) []CheckResult {
 
 // NewHTTPClient 构建一个优先使用系统代理的 HTTP 客户端。
 // 代理选择顺序：HTTP → HTTPS → SOCKS；均未启用时回退到环境变量或直连。
+// 对回环地址（127.0.0.1 / localhost / ::1）与本地服务端口（Ollama 11434、cc-switch 15721 等）
+// 始终直连，避免本地服务经代理访问失败。
 func NewHTTPClient() *http.Client {
-	transport := &http.Transport{}
+	proxyFunc := http.ProxyFromEnvironment
 	if info, err := proxy.Get(); err == nil {
 		for _, u := range []string{
 			info.HTTPProxyURL(),
@@ -55,18 +58,57 @@ func NewHTTPClient() *http.Client {
 				continue
 			}
 			if pu, perr := url.Parse(u); perr == nil {
-				transport.Proxy = http.ProxyURL(pu)
+				proxyFunc = http.ProxyURL(pu)
 				break
 			}
 		}
 	}
-	if transport.Proxy == nil {
-		transport.Proxy = http.ProxyFromEnvironment
-	}
 	return &http.Client{
-		Timeout:   15 * time.Second,
-		Transport: transport,
+		Timeout: 15 * time.Second,
+		Transport: &http.Transport{
+			Proxy: bypassLocalProxy(proxyFunc),
+		},
 	}
+}
+
+// localBypassPorts 是需要绕过代理的本地服务端口：Ollama / llama-server 等 LLM 服务，
+// 以及 cc-switch（15721）。
+var localBypassPorts = map[string]struct{}{
+	"11434": {},
+	"11435": {},
+	"8080":  {},
+	"15721": {},
+}
+
+// bypassLocalProxy 包装 proxyFunc：目标是回环地址或本地服务端口时返回 nil（直连），其余透传。
+func bypassLocalProxy(proxyFunc func(*http.Request) (*url.URL, error)) func(*http.Request) (*url.URL, error) {
+	return func(req *http.Request) (*url.URL, error) {
+		if shouldBypassProxy(req) {
+			return nil, nil
+		}
+		return proxyFunc(req)
+	}
+}
+
+// shouldBypassProxy 判断请求是否应绕过代理（回环地址或本地服务端口）。
+func shouldBypassProxy(req *http.Request) bool {
+	if isLoopbackHost(req.URL.Hostname()) {
+		return true
+	}
+	_, ok := localBypassPorts[req.URL.Port()]
+	return ok
+}
+
+// isLoopbackHost 判断主机名是否为回环地址（localhost、127.0.0.0/8 或 ::1）。
+func isLoopbackHost(host string) bool {
+	host = strings.ToLower(strings.TrimSpace(host))
+	if host == "localhost" {
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	return false
 }
 
 // PublicIPCheck 通过外部服务查询公网 IP。

@@ -8,8 +8,8 @@ import (
 )
 
 func TestSelectAndFind(t *testing.T) {
-	if len(Supported()) != 4 {
-		t.Fatalf("Supported 数量 = %d, want 4", len(Supported()))
+	if len(Supported()) != 6 {
+		t.Fatalf("Supported 数量 = %d, want 6", len(Supported()))
 	}
 	if _, err := Find("npm"); err != nil {
 		t.Errorf("Find(npm): %v", err)
@@ -17,8 +17,10 @@ func TestSelectAndFind(t *testing.T) {
 	if _, err := Find("NPM"); err != nil {
 		t.Errorf("Find(NPM): %v", err)
 	}
-	if _, err := Find("brew"); err == nil {
-		t.Error("Find(brew) 应报错")
+	for _, name := range []string{"pnpm", "brew"} {
+		if _, err := Find(name); err != nil {
+			t.Errorf("Find(%s): %v", name, err)
+		}
 	}
 	tools, err := Select([]string{"npm", "docker"})
 	if err != nil || len(tools) != 2 {

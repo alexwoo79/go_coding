@@ -17,7 +17,7 @@ var onCmd = &cobra.Command{
 及其端口，然后把代理应用到：
   1. 系统代理（macOS 所有网络服务的 HTTP/SOCKS）
   2. git 全局代理（http.proxy / https.proxy）
-  3. 开发工具配置（npm / pip / cargo / docker）
+  3. 开发工具配置（npm / pnpm / pip / cargo / docker / brew）
   4. 终端环境变量（新开终端自动生效，或手动 eval）
 执行前会保存快照，可用 proxyctl off / restore 恢复。`,
 	Args: usageArgs(cobra.NoArgs),
@@ -78,7 +78,7 @@ var onCmd = &cobra.Command{
 var offCmd = &cobra.Command{
 	Use:   "off",
 	Short: "一键直连（等价于 clear）",
-	Long: `关闭系统代理（含 WPAD）、清除 git 与开发工具（npm/pip/cargo/docker）
+	Long: `关闭系统代理（含 WPAD）、清除 git 与开发工具（npm/pnpm/pip/cargo/docker/brew）
 的代理配置，并提示当前终端执行 eval "$(proxyctl env --clear)" 立即直连。`,
 	Args: usageArgs(cobra.NoArgs),
 	RunE: func(cmd *cobra.Command, args []string) error {

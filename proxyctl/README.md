@@ -57,7 +57,7 @@ proxyctl off                 # 一键直连（等价于 clear）
 proxyctl test                # 网络连通性测试
 proxyctl doctor              # 一键诊断开发环境网络状态
 proxyctl env                 # 生成/安装终端代理环境变量
-proxyctl tools               # 管理 npm/cargo/pip/docker 的代理配置
+proxyctl tools               # 管理 npm/pnpm/pip/cargo/docker/brew 的代理配置
 proxyctl status --json       # 以 JSON 输出状态（便于 AI Agent 消费）
 proxyctl profile list        # 列出系统代理 profile
 proxyctl port 7892           # 查看 7892 端口占用
@@ -77,7 +77,7 @@ proxyctl port 7892 --kill    # 结束占用 7892 端口的进程
 | `test` | 依次执行公网 IP、HTTP 响应、ping、git 连通性测试 |
 | `doctor` | 一键诊断：系统代理、git 代理、端口监听、连通性、环境变量，发现问题时退出码为 1 |
 | `env` | 把当前系统代理生成为终端环境变量脚本，或安装到 shell 配置文件 |
-| `tools` | 读写 npm/cargo/pip/docker 各自的代理配置文件（apply/clear/restore/list） |
+| `tools` | 读写 npm/pnpm/pip/cargo/docker/brew 各自的代理配置文件（apply/clear/restore/list） |
 | `port` | 检查 TCP 端口占用，可结束占用进程 |
 | `profile` | 保存 / 列出 / 应用 / 删除系统代理 profile |
 | `version` | 显示版本、commit、构建时间与 Go 版本 |
@@ -188,15 +188,15 @@ proxyctl profile use direct  # 切到直连（新开终端自动恢复直连）
 
 ### tools（开发工具代理配置）
 
-`env` 覆盖环境变量型工具；npm、pip、cargo、docker 还有各自的持久化配置文件，
-由 `tools` 管理：
+`env` 覆盖环境变量型工具；npm、pnpm、pip、cargo、docker、brew 还有各自的
+持久化配置文件，由 `tools` 管理：
 
 ```bash
 proxyctl tools list                # 查看各工具当前代理配置
 proxyctl tools apply               # 把当前系统代理写入全部工具（可选指定工具）
 proxyctl tools clear               # 清除工具代理配置
 proxyctl tools restore             # 从快照恢复（apply/clear 前自动保存快照）
-proxyctl tools apply npm cargo     # 只写指定工具
+proxyctl tools apply npm pnpm      # 只写指定工具
 ```
 
 对应配置文件：
@@ -204,9 +204,15 @@ proxyctl tools apply npm cargo     # 只写指定工具
 | 工具 | 配置文件 | 配置项 |
 | --- | --- | --- |
 | npm | `~/.npmrc`（可用 `npm_config_userconfig` 覆盖） | `proxy` / `https-proxy` |
+| pnpm | 全局 `config.yaml`（macOS `~/Library/Preferences/pnpm/config.yaml`；Linux `~/.config/pnpm/config.yaml`；可用 `XDG_CONFIG_HOME` 覆盖） | `httpProxy` / `httpsProxy` / `noProxy` |
 | pip | `~/.config/pip/pip.conf`（可用 `PIP_CONFIG_FILE` 覆盖） | `[global] proxy` |
 | cargo | `~/.cargo/config.toml`（可用 `CARGO_HOME` 覆盖） | `[http] proxy` |
 | docker | `~/.docker/config.json`（可用 `DOCKER_CONFIG` 覆盖） | `proxies.default.httpProxy/httpsProxy/noProxy` |
+| brew | `~/.homebrew/brew.env`（可用 `XDG_CONFIG_HOME` / `HOMEBREW_XDG_CONFIG_HOME` 覆盖） | `http_proxy` / `https_proxy` / `all_proxy` / `no_proxy` |
+
+> pnpm 的代理配置基于 pnpm v11 的全局 `config.yaml`；brew 的用户级环境文件
+> `brew.env` 由 Homebrew 的 `bin/brew` 启动时读取并导出其中的代理变量，
+> 无需额外安装任何东西。
 
 `proxyctl clear` 会一并清除这些工具的代理配置；`proxyctl restore`
 会一并恢复（前提是快照存在）。
@@ -219,7 +225,7 @@ Clash/Mihomo/v2ray/xray/sing-box 等），然后一键应用到：
 
 1. 系统代理（macOS 所有网络服务）
 2. git 全局代理
-3. 开发工具配置（npm/pip/cargo/docker）
+3. 开发工具配置（npm/pnpm/pip/cargo/docker/brew）
 4. 终端环境变量（新开终端自动生效，或当前终端手动 `eval "$(proxyctl env)"`）
 
 ```bash

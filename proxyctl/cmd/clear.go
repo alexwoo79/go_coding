@@ -15,7 +15,7 @@ var clearCmd = &cobra.Command{
 	Use:   "clear",
 	Short: "关闭系统代理并清除 git 全局代理",
 	Long: `关闭系统代理（所有网络服务的 HTTP/HTTPS/SOCKS/PAC），
-并清除 git 全局代理与开发工具（npm/cargo/pip/docker）的代理配置。
+并清除 git 全局代理与开发工具（npm/pnpm/pip/cargo/docker/brew）的代理配置。
 若之前执行过 proxyctl apply，
 本次操作前的状态可通过 proxyctl restore 恢复。`,
 	Args: usageArgs(cobra.NoArgs),

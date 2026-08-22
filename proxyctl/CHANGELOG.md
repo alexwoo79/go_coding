@@ -29,6 +29,10 @@
 - **git 错误不再被吞掉**：新增 `internal/git`，区分「未设置」与「读取失败」，
   不再把 git 不存在 / 配置损坏伪装成空字符串。
 - **PAC URL 保留**：`Info` 新增 `AutoConfigURL`，`status` 现在能显示 PAC 脚本地址。
+- **HTTP 客户端绕过本地代理**：`test` / `doctor` 使用的 HTTP 客户端在走系统代理时，
+  显式对回环地址（`127.0.0.1` / `localhost` / `::1`）与本地服务端口
+  （Ollama `11434` / `11435`、llama-server `8080`、cc-switch `15721`）直连，
+  避免本地服务被错误地经代理访问而失败。
 
 ### clear 完善（稳定期修复）
 

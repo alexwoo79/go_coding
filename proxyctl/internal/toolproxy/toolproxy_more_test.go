@@ -60,6 +60,8 @@ func TestApplyClearRestore(t *testing.T) {
 	t.Setenv("PIP_CONFIG_FILE", filepath.Join(dir, "pip.conf"))
 	t.Setenv("CARGO_HOME", dir)
 	t.Setenv("DOCKER_CONFIG", dir)
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOMEBREW_XDG_CONFIG_HOME", dir)
 
 	tools, err := Select(nil)
 	if err != nil {
